@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>USA Macroeconomic Dashboard (2018–2024)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #171d33;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
+      --accent3: #f97316;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --shadow-soft: 0 14px 30px rgba(0,0,0,0.45);
+      --radius-lg: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%);
+      color: var(--text-main);
+      padding: 24px;
+    }
+    .dashboard { max-width: 1400px; margin: 0 auto; }
+
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+    }
+    .header-left h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .flag {
+      width: 26px;
+      height: 18px;
+      border-radius: 3px;
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.7);
+      background: linear-gradient(to bottom, #b91c1c 0, #b91c1c 33%, #ffffff 33%, #ffffff 66%, #1d4ed8 66%, #1d4ed8 100%);
+    }
+    .header-left p { margin-top: 6px; color: var(--text-muted); font-size: 13px; }
+    .header-right { text-align: right; min-width: 220px; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(59,130,246,0.1); color: #bfdbfe;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .tag span.dot {
+      width: 8px; height: 8px; border-radius: 999px;
+      background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,0.2);
+    }
+    .header-right p { margin-top: 6px; color: var(--text-muted); font-size: 12px; }
+
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+
+    .card {
+      background: linear-gradient(145deg, rgba(31,41,55,0.96), rgba(15,23,42,0.98));
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148,163,184,0.25);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.16), transparent 60%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .card-inner { position: relative; z-index: 1; }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9ca3af;
+    }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(148,163,184,0.4);
+      color: #e5e7eb;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .metric-value span.sub { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+
+    .metric-trend { margin-top: 4px; font-size: 11px; color: var(--text-muted); }
+    .trend-up { color: var(--accent2); }
+    .trend-down { color: var(--danger); }
+    .trend-neutral { color: #eab308; }
+
+    .kpi-row {
+      margin-top: 10px;
+      display: flex; flex-wrap: wrap; gap: 12px;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .kpi-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(31,41,55,0.85);
+      border: 1px solid rgba(55,65,81,0.9);
+    }
+
+    .col-3 { grid-column: span 3; }
+    .col-4 { grid-column: span 4; }
+    .col-5 { grid-column: span 5; }
+    .col-6 { grid-column: span 6; }
+    .col-7 { grid-column: span 7; }
+    .col-12 { grid-column: span 12; }
+
+    .chart-container { margin-top: 10px; height: 220px; }
+    .small-chart { height: 140px; }
+
+    .section-title {
+      margin: 26px 4px 10px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9ca3af;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::before {
+      content: "";
+      width: 32px; height: 1px;
+      background: linear-gradient(to right, #3b82f6, transparent);
+    }
+
+    .note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 12px; margin-top: 8px;
+    }
+    th, td { padding: 6px 8px; border-bottom: 1px solid rgba(55,65,81,0.8); }
+    th { text-align: left; font-weight: 600; color: #d1d5db; }
+    tr:nth-child(even) td { background: rgba(15,23,42,0.55); }
+
+    .grade-pill {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 999px; font-size: 11px;
+    }
+    .grade-a {
+      background: rgba(34,197,94,0.15);
+      color: #bbf7d0;
+      border: 1px solid rgba(34,197,94,0.5);
+    }
+    .grade-b {
+      background: rgba(59,130,246,0.15);
+      color: #bfdbfe;
+      border: 1px solid rgba(59,130,246,0.5);
+    }
+    .risk-text { font-size: 11px; color: var(--text-muted); }
+
+    @media (max-width: 1024px) {
+      .col-3, .col-4, .col-5, .col-6, .col-7, .col-12 { grid-column: span 12; }
+      .header-right { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1><div class="flag"></div> USA Macroeconomic Dashboard <span style="font-size:13px;color:#6b7280;">2018–2024</span></h1>
+      <p>Largest economy, global reserve currency, and innovation hub in trade, finance, and technology.[web:1][web:70]</p>
+    </div>
+    <div class="header-right">
+      <div class="tag"><span class="dot"></span> Macro & Investment View</div>
+      <p>Time period: 2018–2024 (with latest 2025 signals where available).[web:68][web:69]</p>
+    </div>
+  </div>
+
+  <!-- TOP KPIs -->
+  <div class="grid">
+    <!-- GDP -->
+    <div class="card col-3">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Real GDP Growth</div>
+          <div class="badge">Output</div>
+        </div>
+        <div class="metric-value">
+          2.8% <span class="sub">Full‑year 2024[web:71]</span>
+        </div>
+        <div class="metric-trend trend-neutral">
+          • Stable post‑COVID: 2021 (5.9%), 2022 (2.1%), 2023 (2.9%).[web:71][web:73]
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-pill">Nominal GDP ≈ $29.2T (2024)[web:71]</div>
+          <div class="kpi-pill">Share of world GDP ≈ 27.5%[web:70]</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inflation -->
+    <div class="card col-3">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Inflation (CPI)</div>
+          <div class="badge">Prices</div>
+        </div>
+        <div class="metric-value">
+          3.4% <span class="sub">2024 avg; ≈2.7% by late‑2025[web:69][web:71]</span>
+        </div>
+        <div class="metric-trend trend-down">
+          • Down from ≈8% peak in 2022 as supply chains normalized and Fed tightened policy.[web:71][web:68]
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-pill">Target: 2% (Fed)[web:78]</div>
+          <div class="kpi-pill">Core CPI near 2.5–3.0%[web:69]</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unemployment -->
+    <div class="card col-3">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Unemployment</div>
+          <div class="badge">Labor</div>
+        </div>
+        <div class="metric-value">
+          4.0–4.6% <span class="sub">2024–2025 range[web:69][web:71]</span>
+        </div>
+        <div class="metric-trend trend-up">
+          • Up from 3.4% lows; still near full‑employment but signaling cooling.[web:69][web:1]
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-pill">COVID peak ≈14.7% (Apr‑2020)[web:69]</div>
+          <div class="kpi-pill">Wage growth moderating from 2022 highs[web:69]</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fiscal & External -->
+    <div class="card col-3">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Fiscal & External</div>
+          <div class="badge">Imbalances</div>
+        </div>
+        <div class="metric-value">
+          6.4% <span class="sub">Fiscal deficit (% of GDP, FY‑2024)[web:71]</span>
+        </div>
+        <div class="metric-trend trend-down">
+          • Current account deficit ≈3.9% of GDP in 2024.[web:51][web:77]
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-pill">Interest payments ≈$880B (2024)[web:79]</div>
+          <div class="kpi-pill">Debt ≈98% of GDP (public)[web:79]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: GROWTH & LABOR -->
+  <div class="section-title">Growth, Inflation & Labor</div>
+  <div class="grid">
+    <!-- GDP chart -->
+    <div class="card col-6">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Real GDP Growth (2018–2024)</div>
+          <div class="badge">Pre‑COVID → COVID → Recovery</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="gdpChart"></canvas>
+        </div>
+        <p class="note">
+          GDP contracted sharply in 2020 (‑3.4%), rebounded in 2021 (5.9%), and then settled near 2–3% growth in 2022–2024.[web:71][web:73]
+        </p>
+      </div>
+    </div>
+
+    <!-- Inflation vs Unemployment -->
+    <div class="card col-6">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Inflation vs Unemployment (2018–2024)</div>
+          <div class="badge">Dual‑axis view</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="inflUnempChart"></canvas>
+        </div>
+        <p class="note">
+          Post‑pandemic, inflation spiked as unemployment fell; since 2023, inflation is easing while unemployment edges up.[web:69][web:71]
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: POLICY & EXTERNAL -->
+  <div class="section-title">Policy, Trade & Dollar</div>
+  <div class="grid">
+    <!-- Fed Funds Rate -->
+    <div class="card col-4">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Federal Funds Rate Path</div>
+          <div class="badge">Monetary Policy</div>
+        </div>
+        <div class="chart-container small-chart">
+          <canvas id="rateChart"></canvas>
+        </div>
+        <p class="note">
+          Policy rates moved from near‑zero (2020–2021) to above 5% by 2023, then began easing as inflation cooled.[web:71][web:78]
+        </p>
+      </div>
+    </div>
+
+    <!-- Fiscal Deficit & Interest -->
+    <div class="card col-4">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Deficit & Interest Burden</div>
+          <div class="badge">Fiscal Health</div>
+        </div>
+        <div class="chart-container small-chart">
+          <canvas id="fiscalChart"></canvas>
+        </div>
+        <p class="note">
+          Pandemic‑era deficits exceeded 10% of GDP and interest costs have risen rapidly with higher rates and large debt.[web:79][web:71]
+        </p>
+      </div>
+    </div>
+
+    <!-- Trade Balance -->
+    <div class="card col-4">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Trade Balance (Goods & Services)</div>
+          <div class="badge">External Sector</div>
+        </div>
+        <div class="chart-container small-chart">
+          <canvas id="tradeChart"></canvas>
+        </div>
+        <p class="note">
+          The USA runs a persistent trade deficit; 2024 gap is close to ‑$900B, mainly due to goods imports.[web:74][web:76]
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: BUSINESS ENVIRONMENT & SECTORS -->
+  <div class="section-title">Business Climate & Strategic Sectors</div>
+  <div class="grid">
+    <!-- Business environment -->
+    <div class="card col-5">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Business Environment & Rule of Law</div>
+          <div class="badge">Investment Climate</div>
+        </div>
+        <p style="font-size:12px;margin-top:4px;color:var(--text-muted);line-height:1.5;">
+          • Ease of doing business and contract enforcement remain strong, backed by deep and liquid capital markets.[web:70][web:76]<br/>
+          • Rule‑of‑law indicators show slight erosion over the past decade but core institutions stay functional.[web:22]<br/>
+          • The dollar continues as the dominant reserve currency, supporting stable financing conditions.[web:77][web:78]
+        </p>
+        <div class="kpi-row" style="margin-top:12px;">
+          <div class="kpi-pill">Reserve currency share ≈60% of FX reserves[web:77]</div>
+          <div class="kpi-pill">Highly liquid Treasury market[web:78]</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sector table -->
+    <div class="card col-7">
+      <div class="card-inner">
+        <div class="card-header">
+          <div class="card-title">Key Investment Sectors (USA)</div>
+          <div class="badge">Strategic Focus</div>
+        </div>
+        <table>
+          <thead>
+          <tr>
+            <th>Sector</th>
+            <th>Government Support</th>
+            <th>Growth & Relevance</th>
+            <th>Grade</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>Semiconductors & Advanced Manufacturing</td>
+            <td>CHIPS Act: direct subsidies + tax credits to reshore chip production.[web:31][web:75]</td>
+            <td>Multiple new fabs announced; U.S. share of advanced nodes expected to rise.[web:31][web:80]</td>
+            <td><span class="grade-pill grade-a">A+</span></td>
+          </tr>
+          <tr>
+            <td>Renewable Energy & EV Ecosystem</td>
+            <td>Inflation Reduction Act: large clean‑energy and EV incentives.[web:44][web:72]</td>
+            <td>Rapid growth in solar, storage and EV sales; long‑term decarbonization push.[web:68][web:81]</td>
+            <td><span class="grade-pill grade-a">A</span></td>
+          </tr>
+          <tr>
+            <td>AI, Data Centers & Digital Infra</td>
+            <td>R&D credits, infrastructure demand from private tech and public sector.[web:78]</td>
+            <td>Strong AI and cloud‑driven build‑out; high projected investment.[web:71][web:78]</td>
+            <td><span class="grade-pill grade-a">A</span></td>
+          </tr>
+          <tr>
+            <td>Defense & Aerospace</td>
+            <td>Largest global defense budget and multi‑year procurement programs.[web:81]</td>
+            <td>Advanced tech, export strength, and stable demand from allies.[web:81]</td>
+            <td><span class="grade-pill grade-b">A‑</span></td>
+          </tr>
+          <tr>
+            <td>Biotechnology & Healthcare</td>
+            <td>Strong IP protection, FDA framework, and research support.[web:70]</td>
+            <td>Leads in new drug approvals; aging population drives long‑term demand.[web:70]</td>
+            <td><span class="grade-pill grade-b">A‑</span></td>
+          </tr>
+          </tbody>
+        </table>
+        <p class="risk-text" style="margin-top:6px;">
+          Key risks: high public debt, rising interest costs, and political polarization, partly offset by innovation and institutional resilience.[web:79][web:1]
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /dashboard -->
+
+<script>
+  // ----- GDP Chart -----
+  const gdpCtx = document.getElementById('gdpChart').getContext('2d');
+  new Chart(gdpCtx, {
+    type: 'line',
+    data: {
+      labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+      datasets: [{
+        label: 'Real GDP Growth (%)',
+        data: [2.9, 2.3, -3.4, 5.9, 2.1, 2.9, 2.8],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.25)',
+        borderWidth: 2,
+        tension: 0.35,
+        fill: true,
+        pointRadius: 3,
+        pointBackgroundColor: '#93c5fd'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 11 } },
+          grid: { color: 'rgba(55,65,81,0.5)' }
+        },
+        y: {
+          ticks: { color: '#9ca3af', font: { size: 11 }, callback: v => v + '%' },
+          grid: { color: 'rgba(31,41,55,0.7)' },
+          suggestedMin: -5,
+          suggestedMax: 7
+        }
+      }
+    }
+  });
+
+  // ----- Inflation vs Unemployment -----
+  const inflUnempCtx = document.getElementById('inflUnempChart').getContext('2d');
+  new Chart(inflUnempCtx, {
+    data: {
+      labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+      datasets: [
+        {
+          type: 'line',
+          label: 'Inflation (CPI, %)',
+          data: [2.4, 1.8, 1.2, 4.7, 8.0, 4.1, 3.4],
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.2)',
+          yAxisID: 'y1',
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#fed7aa'
+        },
+        {
+          type: 'line',
+          label: 'Unemployment (%)',
+          data: [3.9, 3.7, 8.1, 5.4, 3.6, 3.6, 4.0],
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.2)',
+          yAxisID: 'y2',
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#bbf7d0'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#e5e7eb', font: { size: 11 } } }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 11 } },
+          grid: { color: 'rgba(55,65,81,0.5)' }
+        },
+        y1: {
+          position: 'left',
+          ticks: { color: '#f97316', font: { size: 11 }, callback: v => v + '%' },
+          grid: { color: 'rgba(31,41,55,0.7)' }
+        },
+        y2: {
+          position: 'right',
+          ticks: { color: '#22c55e', font: { size: 11 }, callback: v => v + '%' },
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+
+  // ----- Fed Rate Chart -----
+  const rateCtx = document.getElementById('rateChart').getContext('2d');
+  new Chart(rateCtx, {
+    type: 'line',
+    data: {
+      labels: ['2018','2019','2020','2021','2022','2023','2024'],
+      datasets: [{
+        label: 'Fed Funds Rate (%)',
+        data: [1.8, 1.6, 0.4, 0.1, 1.7, 5.3, 4.5],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.2)',
+        tension: 0.35,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#93c5fd'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e5e7eb', font: { size: 11 } } }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 11 } },
+          grid: { color: 'rgba(55,65,81,0.5)' }
+        },
+        y: {
+          ticks: { color: '#9ca3af', font: { size: 11 }, callback: v => v + '%' },
+          grid: { color: 'rgba(31,41,55,0.7)' }
+        }
+      }
+    }
+  });
+
+  // ----- Fiscal Chart -----
+  const fiscalCtx = document.getElementById('fiscalChart').getContext('2d');
+  new Chart(fiscalCtx, {
+    data: {
+      labels: ['2019','2020','2021','2022','2023','2024'],
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Deficit (% of GDP)',
+          data: [4.6, 14.9, 11.7, 5.5, 6.2, 6.4],
+          backgroundColor: 'rgba(248,113,113,0.65)',
+          borderColor: '#ef4444',
+          borderWidth: 1,
+          yAxisID: 'y1'
+        },
+        {
+          type: 'line',
+          label: 'Interest Payments ($B)',
+          data: [375, 615, 352, 475, 659, 882],
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.2)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 3,
+          pointBackgroundColor: '#bbf7d0',
+          yAxisID: 'y2'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e5e7eb', font: { size: 11 } } }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 11 } },
+          grid: { color: 'rgba(55,65,81,0.5)' }
+        },
+        y1: {
+          position: 'left',
+          ticks: { color: '#f97316', font: { size: 11 }, callback: v => v + '%' },
+          grid: { color: 'rgba(31,41,55,0.7)' }
+        },
+        y2: {
+          position: 'right',
+          ticks: { color: '#22c55e', font: { size: 11 }, callback: v => '$' + v + 'B' },
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+
+  // ----- Trade Chart -----
+  const tradeCtx = document.getElementById('tradeChart').getContext('2d');
+  new Chart(tradeCtx, {
+    type: 'bar',
+    data: {
+      labels: ['2018','2019','2020','2021','2022','2023','2024'],
+      datasets: [{
+        label: 'Trade Balance ($B, goods & services)',
+        data: [-870, -631, -313, -571, -859, -785, -918],
+        backgroundColor: 'rgba(248,113,113,0.7)',
+        borderColor: '#b91c1c',
+        borderWidth: 1.2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e5e7eb', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ' + ctx.raw + ' Bn'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#9ca3af', font: { size: 11 } },
+          grid: { color: 'rgba(55,65,81,0.5)' }
+        },
+        y: {
+          ticks: {
+            color: '#9ca3af', font: { size: 11 },
+            callback: v => v + ' Bn'
+          },
+          grid: { color: 'rgba(31,41,55,0.7)' }
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>
